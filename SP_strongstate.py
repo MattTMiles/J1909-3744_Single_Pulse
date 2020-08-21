@@ -13,7 +13,7 @@ fdfs = pd.read_pickle("./Freq_small_df.pkl")
 active = np.load("fdata_smaller_scrunched.npy")
 
 bright = np.zeros(len(fdfs))
-limit = 3*fdfs['Baseband Noise']
+limit = 3*fdfs['Baseline Noise']
 
 bright[fdfs['Fluence']>limit] = 1
 condition = bright==1
@@ -26,14 +26,14 @@ def p_fit(k, lamb):
     return poisson.pmf(k, lamb)
 
 bins = np.arange(1,len(Counter(countbright))+1)-0.5
-entries, bin_edges, patches = plt.hist(countbright,bins=bins,label="Consecutive bright pulses", density=True)
+entries, bin_edges, patches = plt.hist(countbright,bins=bins,label="Consecutive bright pulses")
 
 bin_middles = 0.5*(bin_edges[1:] + bin_edges[:-1])
 x = np.arange(1,len(Counter(countbright))+1)
 
 P_params, P_cov = curve_fit(p_fit, bin_middles, entries)
 
-plt.plot(x, p_fit(x, *P_params),marker='o',linestyle='')
+#plt.plot(x, p_fit(x, *P_params),marker='o',linestyle='')
 plt.legend()
 plt.figure()
 

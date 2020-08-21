@@ -14,7 +14,8 @@ from pylab import hist, diag
 
 #Import the good frequency channels (4 -> 13)
 fdfs = pd.read_pickle("./Freq_small_df.pkl")
-
+rawdata = np.load("fdata_smaller_scrunched.npy")
+'''
 #Fit for the mean and std of the off pulse
 mu_offpulse, std_offpulse = norm.fit(fdfs['snr_off'])
 
@@ -24,11 +25,11 @@ fdfs['snr_off'].hist(bins=100, label = "Off-Pulse region")
 x = np.linspace(fdfs['snr_off'].min(), fdfs['snr_off'].max(), 100)
 p_offpulse = norm.pdf(x, mu_offpulse, std_offpulse)
 
-#plt.plot(x, p_offpulse, 'k', linewidth=2,label="Off-Pulse dist")
+plt.plot(x, p_offpulse, 'k', linewidth=2,label="Off-Pulse dist")
 #title = "Fit Results for off-pulse window: mu = %.2f, std = %.2f" % (mu_offpulse, std_offpulse)
 #plt.title(title)
 #plt.figure()
-
+'''
 '''
 #Create a histogram that has the off-pulse region subtracted
 subtracted_snr = fdfs['snr'] - fdfs['snr_off']
@@ -47,24 +48,30 @@ plt.figure()
 plt.show()
 '''
 
+f = 0.793243
 data = fdfs['snr']
+
 def gauss1(x,mu,sigma,A):
-    #return A*np.exp(-(x-mu)**2/2/sigma**2)
-    return A*np.exp(-0.5*(np.abs((x-mu)/(sigma)))**2.394)
+    return f*(A/((2*np.pi*(1+(sigma**2)))**0.5))*np.exp(-0.5*(np.abs(((x-mu)**3.000000)/(1+(sigma**3.000000)))))
 
 def gauss2(x,mu,sigma,A):
-    return A*np.exp(-0.5*(np.abs((x-mu)/(sigma)))**2.879)
+    return (1-f)*(A/((2*np.pi*(1+(sigma**2)))**0.5))*np.exp(-0.5*(np.abs(((x-mu)**2.000000)/(1+(sigma**2.000000)))))
+
+def gauss3(x,mu,sigma,A):
+    return (A/((2*np.pi*(sigma**2))**0.5))*np.exp(-0.5*(np.abs(((x-mu)/sigma)**2)))
+
+def gauss4(x,mu,sigma,A):
+    return (A/((2*np.pi*(sigma**2))**0.5))*np.exp(-0.5*(np.abs(((x-mu)/sigma)**2)))
+
+def gauss_norm(x,mu,sigma,A):
+    return A*np.exp(-0.5*(np.abs((x-mu)/(sigma)))**2)
     
 def bimodal(x,mu1,sigma1,A1,mu2,sigma2,A2):
     return gauss1(x,mu1,sigma1,A1)+gauss2(x,mu2,sigma2,A2)
 
-#Poisson dist
-def p_fit(k, lamb):
-    return poisson.pmf(k, lamb)
+def bimodal2(x,mu1,sigma1,A1,mu2,sigma2,A2):
+    return gauss3(x,mu1,sigma1,A1)+gauss4(x,mu2,sigma2,A2)
 
-def bimodal2(k,lamb1,lamb2):
-    return p_fit(k,lamb1)+p_fit(k, lamb2)
-    
 '''
 y,x,_=hist(data,100,alpha=.3,label='data')
 x = (x[1:]+x[:-1])/2
@@ -179,31 +186,59 @@ plt.show()
 '''
 
 #Version that isn't using density
-Edata = fdfs["Fluence"]/fdfs["Fluence"].mean()
+Edata = fdfs["snr"]
+#Enorm = (Edata - fdfs["Baseline Noise"].mean())/fdfs["off_p_sigma"]
 
 fig, axs = plt.subplots(2)
-Normalised_offpulse = fdfs['Baseband Noise']/fdfs["Fluence"].mean()
+#Normalised_offpulse = (fdfs['Baseline Noise'] - fdfs["Baseline Noise"].mean())/fdfs["off_p_sigma"]
+Normalised_offpulse = fdfs["snr_off"]
+Off_y,Off_x,Off_ = hist(Normalised_offpulse,100,label = "off pulse")
+Off_x = (Off_x[1:]+Off_x[:-1])/2
+
 #Normalised_offpulse.hist(bins=100, label = "Off-Pulse region")
+mu_offpulse, std_offpulse = norm.fit(fdfs['snr_off'])
+xp = np.linspace(fdfs['snr_off'].min(), Edata.max(), 1000)
+#p_offpulse = norm.pdf(xp, mu_offpulse, std_offpulse)
+Off_expected = (mu_offpulse,std_offpulse,1720)
+Off_params,Off_cov = curve_fit(gauss_norm,Off_x,Off_y,Off_expected)
+p_offpulse = gauss_norm(xp,*Off_params)
+axs[1].plot(xp,p_offpulse)
+
+Off_mu_error = np.sqrt(Off_cov[0,0])
+Off_std_error = np.sqrt(Off_cov[1,1])
+
+'''
+print("Off pulse parameters are: mu={:.4f}+/-{:.4f}, sigma={:.4f}+/-{:.4f}".format(Off_params[0],np.sqrt(Off_cov[0,0]), Off_params[1], np.sqrt(Off_cov[1,1]))
+'''
 
 E_y,E_x,E_=hist(Edata,100,alpha=.3,label='On-Pulse')
 E_x = (E_x[1:]+E_x[:-1])/2
 
-E_expected = (0.43,0.3,1110,1.23,0.5,1100)
-E_params,E_cov=curve_fit(bimodal,E_x,E_y,E_expected)
+E_expected = (0.96,1.1,1157,7.3,2.7,1140)
+bilby_params = (1.83,1.20,1297.78,6.36,1.57,1297.75)
+E_params,E_cov=curve_fit(bimodal2,E_x,E_y,bilby_params)
 E_sigma=np.sqrt(diag(E_cov))
-E_output = bimodal(E_x,*E_params)
+E_output = bimodal2(E_x,*E_params)
 
-axs[1].plot(E_x,bimodal(E_x,*E_params),label = "Total")
+bilby_output = bimodal2(E_x, *bilby_params)
 
-axs[1].plot(E_x,gauss1(E_x,E_params[0], E_params[1], E_params[2]),label="Weak")
-axs[1].plot(E_x,gauss2(E_x,E_params[3], E_params[4], E_params[5]),label ="Strong")
-Strong_gauss = gauss2(E_x,E_params[3], E_params[4], E_params[5])
-Weak_gauss = gauss1(E_x,E_params[0], E_params[1], E_params[2])
+#plt.plot(E_x,bimodal2(E_x,*E_params),label = "Total")
+#plt.plot(E_x,gauss4(E_x,E_params[0], E_params[1], E_params[2]),label="Weak")
+#plt.plot(E_x,gauss3(E_x,E_params[3], E_params[4], E_params[5]),label ="Strong")
+
+
+axs[1].plot(E_x,bimodal2(E_x,*E_params),label = "Total")
+
+axs[1].plot(E_x,gauss4(E_x,E_params[0], E_params[1], E_params[2]),label="Weak")
+axs[1].plot(E_x,gauss3(E_x,E_params[3], E_params[4], E_params[5]),label ="Strong")
+Strong_gauss = gauss3(E_x,E_params[3], E_params[4], E_params[5])
+Weak_gauss = gauss4(E_x,E_params[0], E_params[1], E_params[2])
 
 plt.legend()
 
 E_residual = E_y-E_output
-print(sum(np.abs(E_residual)))
+#print(sum(np.abs(E_residual)))
+rms = np.sqrt((sum(E_output**2))/len(E_output))
 
 axs[0].plot(E_x,E_residual)
 error = E_output/np.sqrt(np.abs(E_y))
@@ -211,4 +246,20 @@ axs[0].errorbar(E_x,E_residual,yerr=error)
 
 axs[1].set(xlabel="Normalised Energy", ylabel="Percentage of toal pulses")
 axs[0].set(ylabel="Residual")
+plt.figure()
+#Everything should be set up now, let's try and deconvolve
+E_lengthmatch = bimodal2(xp,*E_params)
+#plt.plot(xp,E_lengthmatch,label="Model fit") 
+#plt.plot(xp,p_offpulse,label="Noise PDF")
+Subtracted = E_lengthmatch-p_offpulse
+Subtracted = [(i>0)*i for i in Subtracted]
+#plt.plot(xp,Subtracted,label="Model with noise subtracted")
+
+#E_output2 = bimodal2(E_x,*E_params)
+#Strong_gauss2 = gauss3(E_x,E_params[3], E_params[4], E_params[5])
+#Weak_gauss2 = gauss4(E_x,E_params[0], E_params[1], E_params[2])
+
+#plt.plot(E_x,E_output2,label="Deconvolved version?")
+#plt.legend()
+#plt.figure()
 plt.show()

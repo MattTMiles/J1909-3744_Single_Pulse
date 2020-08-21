@@ -9,7 +9,7 @@ import scipy
 os.chdir("/fred/oz002/users/mmiles/SinglePulse")
 
 active = np.load("fdata_smaller_scrunched.npy")
-labels = ['Fluence','bins','sigma','snr','Baseline Noise','IP_Fluence','test_nopulse','snr_off']
+labels = ['Fluence','bins','sigma','snr','Baseline Noise','IP_Fluence','test_nopulse','snr_off','off_p_sigma']
 dataframe = []
 fdfs_nopulse = []
 
@@ -40,7 +40,8 @@ for sp in active:
     total2 = sum(using2)
     sigma2 = (total2/len(using2))**0.5
     snr_offpulse = (non_pulse_S-(N*ave2))/(sigma2*np.sqrt(N))
-    d = [S, N, sigma, snr, non_pulse_S, IP_Fluence, window_test,snr_offpulse]
+    d = [S, N, sigma, snr, non_pulse_S, IP_Fluence, window_test, snr_offpulse, sigma2]
     dataframe.append(d)
 
 fdfs = pd.DataFrame(dataframe,columns=labels)
+fdfs.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Freq_small_df.pkl")

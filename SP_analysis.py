@@ -112,7 +112,7 @@ plt.show()
 '''
 
 
-plt.imshow(fdata_smaller_scrunched[250:500].reshape(-1,2048), cmap='afmhot', aspect='auto',interpolation='none', origin='lower')
+plt.imshow(fdata_smaller_scrunched[:1000].reshape(-1,2048), cmap='afmhot', aspect='auto',interpolation='none', origin='lower')
 plt.xlabel('Pulse Phase')
 plt.ylabel('Pulse Index')
 #plt.savefig('/fred/oz002/users/mmiles/SinglePulse/First100_dedisperse.jpeg')

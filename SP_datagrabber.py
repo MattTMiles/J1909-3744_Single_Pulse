@@ -18,28 +18,28 @@ os.chdir("/fred/oz002/users/mmiles/SinglePulse/")
 #Director reference for the source data
 source = "/fred/oz002/users/mmiles/SinglePulse/SinglePulse_data"
 
-farch = []
+parch = []
 
 os.chdir(source)
-for rawdata in sorted(os.listdir(source))[:53000]:
+for rawdata in sorted(os.listdir(source))[:100]:
 #for rawdata in sorted(os.listdir(os.getcwd())):
     if rawdata.startswith('pulse'):
         try:
             archive = psrchive.Archive_load(rawdata)
-            farch.append(archive)
+            parch.append(archive)
         except RuntimeError:
             pass
 
-frequency_data = []
-for archives in farch:
-    archives.pscrunch()
+pol_data = []
+for archives in parch:
+    #archives.pscrunch()
     archives.remove_baseline()
     archives.dedisperse()
-    data_freq = archives.get_data()
-    data_freq = data_freq[0,0,:,:]
-    frequency_data.append(data_freq)
+    data_pol = archives.get_data()
+    #data_pol = data_freq[0,0,:,:]
+    pol_data.append(data_pol)
 
-frequency_data = np.array(frequency_data)
+pol_data = np.array(pol_data)
 #frequency_data = frequency_data[:,0,0,:,:]
 os.chdir("/fred/oz002/users/mmiles/SinglePulse/")
-np.save("frequency_data",frequency_data)
+np.save("pol_data",pol_data)

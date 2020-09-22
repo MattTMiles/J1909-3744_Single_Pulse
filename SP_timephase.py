@@ -1,6 +1,3 @@
-#This creates a plot of the first 100 single pulses in terms of time vs phase
-#This needs to be run with a psrchive module that has a -python3.6... on the end of it
-
 import os
 import psrchive
 import numpy as np 
@@ -48,7 +45,7 @@ for parchives in parch:
     polarisation_data.append(data_pol)
 '''
 for archives in arch:
-    archives.pscrunch()
+    #archives.pscrunch()
     archives.remove_baseline()
     archives.dedisperse()
     #data_freq = archives.get_data()
@@ -73,7 +70,7 @@ useabledata = useabledata[:,0,:]
 
 #Saves the data as .npy files in the main directory
 os.chdir("/fred/oz002/users/mmiles/SinglePulse")
-np.save("useabledata",useabledata)
+np.save("poldata",useabledata)
 #np.save("frequency_data",frequency_data)
 #np.save("polarisation_data",polarisation_data)
 

@@ -11,7 +11,7 @@ import scipy
 from scipy import fft
 from ACF import auto_correlation_function
 import scipy.signal as signal
-from astropy.timeseries import LombScargle
+#from astropy.timeseries import LombScargle
 
 #Change to the testing directory for the single pulses
 os.chdir("/fred/oz002/users/mmiles/SinglePulse/")

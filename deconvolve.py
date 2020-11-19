@@ -51,7 +51,7 @@ def gausscomp2(x,f,mu,sigma,alpha):
 #These are the paramaters found from bilby. 
 #They represent: f, mu1, sigma1, alpha1, mu2, sigma2, alpha2
 #Alpha1 has been preset as alpha1=2 prior to bilby.
-Bilby_params = (0.16,0.58,0.55,2,5.97,4.54,3.57)
+Bilby_params = (0.16,0.64,0.58,2,8.22,6.64,3.97)
 
 #Based on the real data lets bound our distribution
 E_y,E_x,E_=hist(Edata, 50, alpha=.3, label='On-Pulse', density=True)
@@ -80,8 +80,8 @@ reconvolve = (reconvolve/(max(reconvolve)+sys.float_info[3]))
 convolved_modelnorm = model(xarray2, *Bilby_params)
 #convolved_modelnorm = convolved_modelnorm/(max(convolved_modelnorm)+sys.float_info[3])
 #plt.plot(xarray2*2,reconvolve,label="reconvolved using scipy")
-gauss1 = gausscomp1(xarray,0.16,0.58,0.55,2)
-gauss2 = gausscomp2(xarray,0.16,5.97,4.54,3.57)
+gauss1 = gausscomp1(xarray,0.15,0.64,0.58,2)
+gauss2 = gausscomp2(xarray,0.15,8.22,6.64,3.97)
 
 plt.plot(xarray2,convolved_modelnorm, label= "Model")
 plt.plot(xarray,deconvolved_model, label= "Deconvolved Model")

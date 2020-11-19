@@ -14,10 +14,10 @@ dataframe = []
 fdfs_nopulse = []
 
 for sp in active:
-    S = sum(sp[1350:1550])
-    N = 1550-1350
+    S = sum(sp[1450:1550])
+    N = 1550-1450
     IP_Fluence = sum(sp[510:710])
-    lower = sp[:1350]
+    lower = sp[:1450]
     upper = sp[1550:]
     using = np.concatenate((lower,upper),axis=None)
     fdfs_nopulse.append(using)
@@ -27,11 +27,11 @@ for sp in active:
     total = sum(using)
     sigma = (total/len(using))**0.5
     snr = (S-(N*ave))/(sigma*np.sqrt(N))
-    non_pulse_S = sum(sp[1050:1250])
-    non_pulse_s2 = sum(sp[100:300])
+    non_pulse_S = sum(sp[1150:1250])
+    non_pulse_s2 = sum(sp[200:300])
     window_test = non_pulse_S-non_pulse_s2
-    op1 = sp[:1050]
-    op2 = sp[1250:1350]
+    op1 = sp[:1150]
+    op2 = sp[1250:1450]
     op3 = sp[1550:]
     using2 = np.concatenate((op1,op2,op3),axis=None)
     ave2 = (sum(using2)/len(using2))

@@ -27,8 +27,8 @@ weak = fdfs[fdfs['Fluence']<limit]
 '''
 #Now we need to import the polarisation data
 pol_pulses = "/fred/oz002/users/mmiles/SinglePulse/pol_pulses"
-pol_weak = "/fred/oz002/users/mmiles/SinglePulse/pol_weak"
-pol_strong = "/fred/oz002/users/mmiles/SinglePulse/pol_strong"
+pol_weak = "/fred/oz002/users/mmiles/SinglePulse/pol_weak2"
+pol_strong = "/fred/oz002/users/mmiles/SinglePulse/pol_strong2"
 '''
 parch = []
 
@@ -105,11 +105,11 @@ pol_weak = [bulk[x] for x in weak.index]
 os.chdir(pol_pulses)
 
 for rawdata_s in pol_strong:
-    p = sproc.Popen('cp '+rawdata_s+' ../pol_strong',shell=True)
+    p = sproc.Popen('cp '+rawdata_s+' ../pol_strong2',shell=True)
     p.wait()
 
 for rawdata_w in pol_weak:
-    p = sproc.Popen('cp '+rawdata_w+' ../pol_weak',shell = True)
+    p = sproc.Popen('cp '+rawdata_w+' ../pol_weak2',shell = True)
     p.wait()
 
 

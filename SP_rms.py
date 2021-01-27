@@ -33,6 +33,7 @@ weakint = [0.651,0.622,0.613,0.371,0.350,0.323,0.322,0.301]
 allint = [0.295,0.293,0.292,0.149,0.113,0.145,0.097,0.088]
 regint = [0.326,0.326,0.326,0.273,0.282,0.282,0.172,0.186]
 
+
 fig, ax = plt.subplots()
 
 ax.plot(length,strongint,'o-', c='tab:blue', linewidth=1, label='strong mode')

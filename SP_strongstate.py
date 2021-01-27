@@ -1,7 +1,7 @@
 import os
 import psrchive
 import numpy as np 
-#import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt 
 import pandas as pd
 #from pylab import hist
 #from collections import Counter
@@ -9,7 +9,7 @@ import pandas as pd
 #from scipy.special import factorial
 #from scipy.stats import poisson
 #from sklearn import preprocessing
-#from scipy.ndimage.interpolation import shift
+from scipy.ndimage.interpolation import shift
 import subprocess as sproc 
 
 #Source of the SP data
@@ -22,14 +22,14 @@ active = np.load("fdata_smaller_scrunched.npy")
 bright = np.zeros(len(fdfs))
 #limit = 1.32123
 limit = 1.49511
-
+'''
 bright[fdfs['Fluence']>limit] = 1
 
 #Create dataframes for the strong and weak pulses
 strong = fdfs[fdfs['Fluence']>=limit]
 weak = fdfs[fdfs['Fluence']<limit]
 
-#The below code snippet is to copy the data into the strong and weak mode folders. I'm leaving this in in case the limit changes \
+#The below code snippet is to copy the data into the strong and weak mode folders. I'm leaving this in in case the limit changes 
 # and this needs to be done again. If that happens, you should probably clear the Strong_data and Weak_data folders 
 bulk = []
 archivestrong = []
@@ -54,7 +54,7 @@ for rawdata_s in sorted(strongbulk):
 for rawdata_w in sorted(weakbulk):
     p = sproc.Popen('cp '+rawdata_w+' ../Weak_data2',shell = True)
     p.wait()
-'''
+
 os.chdir(Main)
 
 
@@ -62,7 +62,7 @@ Strongdf = pd.DataFrame(strong)
 Weakdf = pd.DataFrame(weak)
 Strongdf.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Strong_state.pkl")
 Weakdf.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Weak_state.pkl")
-
+'''
 #Create the arrays that contain the strong and weak pulses
 strong_array = active[fdfs['Fluence']>=limit]
 weak_array = active[fdfs['Fluence']<limit]
@@ -78,7 +78,7 @@ weak_profile = np.sum(weak_array,axis=0)/len(weak_array)
 
 def norm(data):
     return data-min(data)/(max(data)-min(data))
-
+'''
 jitter_weak = []
 jitter_strong = []
 
@@ -89,8 +89,8 @@ for pulse in strong_array:
 for pulse in weak_array:
     max_weak = np.argmax(pulse)
     jitter_weak.append(max_weak)
-'''
-'''
+
+
 #These are plots of the jitter for the weak and strong pulses
 fig, ax = plt.subplots()
 ax.set_title('Weak Pulse Max Index')
@@ -104,7 +104,6 @@ fig.tight_layout()
 
 plt.show()
 '''
-
 '''
 fig, ax = plt.subplots()
 ax.set_title('Weak Profile')
@@ -126,48 +125,47 @@ ax.plot(Total_profile)
 #plt.axvline(1350)
 #plt.axvline(1550)
 fig.tight_layout()
-
+'''
 
 weak_baseline = sum(weak_profile[:400])/len(weak_profile[:400])
 strong_baseline = sum(strong_profile[:400])/len(strong_profile[:400])
-
+'''
 fig, ax = plt.subplots()
 ax.set_title('Profile Comparison')
 ax.plot(strong_profile,label = 'Strong Profile')
 ax.plot(weak_profile, label = 'Weak Profile')
-plt.axvline(1450)
-plt.axvline(1550)
-plt.axvline(510)
-plt.axvline(710)
+#plt.axvline(1450)
+#plt.axvline(1550)
+#plt.axvline(510)
+#plt.axvline(710)
 fig.legend()
 fig.tight_layout()
-
+'''
 scaled_strong = strong_profile - strong_baseline
 scaled_weak = weak_profile - weak_baseline
-residual = ((scaled_strong/(max(scaled_strong)))-6) - (scaled_weak/(max(scaled_weak)))
+residual = ((scaled_strong/(max(scaled_strong)))) - (scaled_weak/(max(scaled_weak)))
 xarray = np.arange(0,len(strong_profile),1)
-
+shiftedstrong = shift((scaled_strong/(max(scaled_strong))),-6)
+shiftedresidual = shiftedstrong - (scaled_weak/(max(scaled_weak)))
+'''
 fig, ax = plt.subplots()
 ax.set_title('Scaled Profile Comparison')
 ax.plot(scaled_strong/(max(scaled_strong)),label = 'Strong Profile')
 ax.plot(scaled_weak/(max(scaled_weak)), label = 'Weak Profile')
-plt.axvline(1450)
-plt.axvline(1550)
+#plt.axvline(1450)
+#plt.axvline(1550)
 fig.legend()
 fig.tight_layout()
 
 #Shifted version
 fig, ax = plt.subplots()
-ax.set_title('Scaled Profile Comparison')
+ax.set_title('Scaled Shifted Profile Comparison')
 ax.plot(xarray,shift((scaled_strong/(max(scaled_strong))),-6),label = 'Strong Profile')
 ax.plot(xarray,(scaled_weak/(max(scaled_weak))), label = 'Weak Profile')
 #plt.axvline(1450)
 #plt.axvline(1550)
 fig.legend()
 fig.tight_layout()
-
-shiftedstrong = shift((scaled_strong/(max(scaled_strong))),-6)
-shiftedresidual = shiftedstrong - (scaled_weak/(max(scaled_weak)))
 
 fig, ax = plt.subplots()
 ax.set_title('Residual')
@@ -181,9 +179,31 @@ ax.plot(shiftedresidual, label='Strong - Weak shifted to max value')
 fig.legend()
 fig.tight_layout()
 
+fig, axs = plt.subplots(2, gridspec_kw={'height_ratios':[1,2]})
+axs[0].plot(residual, label='Strong - Weak residual',c='tab:green')
+axs[0].set_xlim(1400,1600)
+axs[1].plot(scaled_strong/(max(scaled_strong)),label = 'Strong Profile')
+axs[1].plot(scaled_weak/(max(scaled_weak)), label = 'Weak Profile')
+axs[1].set_xlim(1400,1600)
+axs[0].set_title('Scaled comparison')
+fig.legend()
+fig.tight_layout()
+
+fig, axs = plt.subplots(2, gridspec_kw={'height_ratios':[1,2]})
+axs[0].plot(shiftedresidual, label='Strong - Weak residual',c='tab:green')
+axs[1].plot(xarray,shift((scaled_strong/(max(scaled_strong))),-6),label = 'Strong Profile')
+axs[1].plot(xarray,(scaled_weak/(max(scaled_weak))), label = 'Weak Profile')
+axs[0].set_xlim(1400,1600)
+axs[1].set_xlim(1400,1600)
+axs[0].set_title('Scaled shifted comparison')
+fig.legend()
+fig.tight_layout()
+
 plt.show()
+'''
 
-
+##TOA computation stuff below here
+'''
 #Get the strong arrival times
 arrtim_strong = psrchive.ArrivalTime()
 arrtim_strong.set_shift_estimator('FDM')

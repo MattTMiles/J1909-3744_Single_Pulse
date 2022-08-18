@@ -25,208 +25,149 @@ bright[fdfs['Fluence']>limit] = 1
 strong = fdfs[fdfs['Fluence']>=limit]
 weak = fdfs[fdfs['Fluence']<limit]
 '''
+'''
 #Now we need to import the polarisation data
-pol_pulses = "/fred/oz002/users/mmiles/SinglePulse/pol_pulses"
-pol_weak = "/fred/oz002/users/mmiles/SinglePulse/pol_weak"
-pol_strong = "/fred/oz002/users/mmiles/SinglePulse/pol_strong"
-'''
-parch = []
+#pol_pulses = "/fred/oz002/users/mmiles/SinglePulse/calibrated_all"
+pol_pulses = "/fred/oz002/users/mmiles/SinglePulse/1284_f32p"
+pol_stokes = "/fred/oz002/users/mmiles/SinglePulse/1284_f32_stokes"
 
-parch_weak = []
-parch_strong = []
-os.chdir(pol_weak)
-for rawdata_weak in sorted(os.listdir(pol_weak)):
-    try:
-        archiveweak = psrchive.Archive_load(rawdata_weak)
-        parch_weak.append(archiveweak)
-    except RuntimeError:
-        pass
-
-os.chdir(pol_strong)
-for rawdata_strong in sorted(os.listdir(pol_strong)):
-    try:
-        archivestrong = psrchive.Archive_load(rawdata_strong)
-        parch_strong.append(archivestrong)
-    except RuntimeError:
-        pass
-
-'''
-os.chdir(pol_pulses)
+os.chdir(pol_stokes)
 parch = []
 bulk = []
-for rawdata in sorted(os.listdir(pol_pulses))[:53001]:
-    bulk.append(rawdata)
-    try:
-        parchive = psrchive.Archive_load(rawdata)
-        parch.append(parchive)
-    except RuntimeError:
-        pass
-
+#for rawdata in sorted(os.listdir(pol_pulses))[:53001]:
+pdmp_snr = []
 data = []
-for parchives in parch:
-    parchives.pscrunch()
-    parchives.remove_baseline()
-    parchives.dedisperse()
-    parchives.fscrunch()
-    data_polP = parchives.get_data()
+i=0
+for rawdata in sorted(os.listdir(pol_stokes))[:53000]:
+    #if rawdata.endswith('handChange'):
+    bulk.append(rawdata)
+    
+    parchive = psrchive.Archive_load(rawdata)
+    #parchive.pscrunch()
+    parchive.remove_baseline()
+    parchive.dedisperse()
+    data_polP = parchive.get_data()
     data.append(data_polP)
+    i=i+1
+    print('parchive data retrieved:{}'.format(i))
 
-useabledata = []
+datacheck = [x for x in data if x.shape == (1,4,32,2048)]
+data = np.array(datacheck)
+data = data[:,0,:,:,:]
 
-for entries in data:
-    entries = entries[:,0,:,:]
-    useabledata.append(entries)
+np.save('/fred/oz002/users/mmiles/SinglePulse/stokes_data',data)
+os.chdir(Main)
 
-useabledata = np.array(useabledata)
-useabledata = useabledata[:,0,:]
-useabledata = useabledata[:,0,:]
+data = data[:,:,4:13,:]
+np.save('/fred/oz002/users/mmiles/SinglePulse/stokes_data_f4_13',data)
 
-labels = ['Fluence']
+data = np.sum(data,axis=2)
+np.save('/fred/oz002/users/mmiles/SinglePulse/stokes_data_F',data)
+
+datastokesI = data[:,0,:]
+np.save('/fred/oz002/users/mmiles/SinglePulse/data_stokesI_F',datastokesI)
+
+labels = ['Fluence','bins','sigma','snr','Baseline Noise','IP_Fluence','test_nopulse','snr_off','off_p_sigma']
 dataframe = []
-for polp in useabledata:
-    S = sum(polp[1350:1550])
-    d = [S]
+pol_nopulse = []
+for polp in datastokesI:
+    S = sum(polp[1450:1550])
+    N = 1550-1450
+    IP_Fluence = sum(polp[510:710])
+    lower = polp[:1450]
+    upper = polp[1550:]
+    using = np.concatenate((lower,upper),axis=None)
+    pol_nopulse.append(using)
+    ave = sum(using)/len(using)
+    using = np.subtract(using,ave)
+    using = np.square(using)
+    total = sum(using)
+    sigma = (total/len(using))**0.5
+    snr = (S-(N*ave))/(sigma*np.sqrt(N))
+    non_pulse_S = sum(polp[1150:1250])
+    non_pulse_s2 = sum(polp[200:300])
+    window_test = non_pulse_S-non_pulse_s2
+    op1 = polp[:1150]
+    op2 = polp[1250:1450]
+    op3 = polp[1550:]
+    using2 = np.concatenate((op1,op2,op3),axis=None)
+    ave2 = (sum(using2)/len(using2))
+    using2 = np.subtract(using2,ave2)
+    using2 = np.square(using2)
+    total2 = sum(using2)
+    sigma2 = (total2/len(using2))**0.5
+    snr_offpulse = (non_pulse_S-(N*ave2))/(sigma2*np.sqrt(N))
+    d = [S, N, sigma, snr, non_pulse_S, IP_Fluence, window_test, snr_offpulse, sigma2]
     dataframe.append(d)
 
 df = pd.DataFrame(dataframe,columns=labels)
-df.to_pickle("/fred/oz002/users/mmiles/SinglePulse/pol_fluence.pkl")
+df.to_pickle("/fred/oz002/users/mmiles/SinglePulse/pol_stokesI_df.pkl")
+'''
 
+df = pd.read_pickle('pol_stokesI_df.pkl')
 os.chdir(Main)
-limit = 1.49511
+limit = 1.37501
+#limit = 1.49511
 
-strong = df[df['Fluence']>=limit]
-weak = df[df['Fluence']<limit]
+active = np.load('stokes_data_F.npy')
 
+strong = active[df['snr']>=limit]
+weak = active[df['snr']<limit]
 
-pol_strong = [bulk[x] for x in strong.index]
-pol_weak = [bulk[x] for x in weak.index]
+strongprofs = np.sum(strong, axis=0)
+weakprofs = np.sum(weak,axis=0)
 
-
-os.chdir(pol_pulses)
-
-for rawdata_s in pol_strong:
-    p = sproc.Popen('cp '+rawdata_s+' ../pol_strong',shell=True)
-    p.wait()
-
-for rawdata_w in pol_weak:
-    p = sproc.Popen('cp '+rawdata_w+' ../pol_weak',shell = True)
-    p.wait()
+strongI, strongQ, strongU, strongV = strongprofs[0], strongprofs[1], strongprofs[2], strongprofs[3]
+weakI, weakQ, weakU, weakV = weakprofs[0], weakprofs[1], weakprofs[2], weakprofs[3]
 
 
-#This is just to create the numpy data files
+strongIbaseline = sum(strongI[:400])/len(strongI[:400])
+strongQbaseline = sum(strongQ[:400])/len(strongQ[:400])
+strongUbaseline = sum(strongU[:400])/len(strongU[:400])
+strongVbaseline = sum(strongV[:400])/len(strongV[:400])
 
-weakpol_data = []
-strongpol_data = []
-for weak in pol_weak:
-    weak.remove_baseline()
-    weak.dedisperse()
-    weak.fscrunch()
-    weakdata_pol = weak.get_data()
-    weakpol_data.append(weakdata_pol)
+weakIbaseline = sum(weakI[:400])/len(weakI[:400])
+weakQbaseline = sum(weakQ[:400])/len(weakQ[:400])
+weakUbaseline = sum(weakU[:400])/len(weakU[:400])
+weakVbaseline = sum(weakV[:400])/len(weakV[:400])
 
-for strong in pol_strong:
-    strong.remove_baseline()
-    strong.dedisperse()
-    strong.fscrunch()
-    strongdata_pol = strong.get_data()
-    strongpol_data.append(strongdata_pol)
+strongIb = strongI - strongIbaseline
+strongQb = strongQ - strongQbaseline
+strongUb = strongU - strongUbaseline
+strongVb = strongV - strongVbaseline
 
-weak1 = []
-weak2 = []
-weak3 = []
-weak4 = []
-strong1 = []
-strong2 = []
-strong3 = []
-strong4 = []
+weakIb = weakI - weakIbaseline
+weakQb = weakQ - weakQbaseline
+weakUb = weakU - weakUbaseline
+weakVb = weakV - weakVbaseline
 
-for strongentries in strongpol_data:
-    strongentries = strongentries[0,:,0,:]
-    first = strongentries[0]
-    second = strongentries[1]
-    third = strongentries[2]
-    fourth = strongentries[3]
+PAstrong = (0.5*np.arctan(strongUb/strongQb))*(180/np.pi)
+PAweak = (0.5*np.arctan(weakUb/weakQb))*(180/np.pi)
 
-    strong1.append(first)
-    strong2.append(second)
-    strong3.append(third)
-    strong4.append(fourth)
+raise a
+fig, ax1,ax2 = plt.subplots(2,1) 
 
-strong1 = np.array(strong1)
-strong2 = np.array(strong2)
-strong3 = np.array(strong3)
-strong4 = np.array(strong4)
+ax1.plot
 
-for weakentries in weakpol_data:
-    weakentries = weakentries[0,:,0,:]
-    first = weakentries[0]
-    second = weakentries[1]
-    third = weakentries[2]
-    fourth = weakentries[3]
+ax2.plot(strongIb, label='I')
+ax2.plot(strongQb, label='Q')
+ax2.plot(strongUb, label='U')
+ax2.plot(strongVb, label='V')
 
-    weak1.append(first)
-    weak2.append(second)
-    weak3.append(third)
-    weak4.append(fourth)
+ax.legend()
+ax.set_title('strong')
+#ax.set_xlim(1425,1575)
 
-weak1 = np.array(weak1)
-weak2 = np.array(weak2)
-weak3 = np.array(weak3)
-weak4 = np.array(weak4)
+fig.show()
 
-os.chdir(Main)
-np.save("pol1weak",weak1)
-np.save("pol2weak",weak2)
-np.save("pol3weak",weak3)
-np.save("pol4weak",weak4)
-np.save("pol1strong",strong1)
-np.save("pol2strong",strong2)
-np.save("pol3strong",strong3)
-np.save("pol4strong",strong4)
+fig, ax = plt.subplots() 
 
-#pol_df = pd.DataFrame(pol_data)
+ax.plot(weakIb, label='I')
+ax.plot(weakQb, label='Q')
+ax.plot(weakUb, label='U')
+ax.plot(weakVb, label='V')
 
-
-weak1 = np.load('pol1weak.npy')
-weak2 = np.load('pol2weak.npy')
-weak3 = np.load('pol3weak.npy')
-weak4 = np.load('pol4weak.npy')
-
-strong1 = np.load('pol1strong.npy')
-strong2 = np.load('pol2strong.npy')
-strong3 = np.load('pol3strong.npy')
-strong4 = np.load('pol4strong.npy')
-
-weak1profile = np.sum(weak1,axis=0)/len(weak1)
-weak1baseline = sum(weak1profile[:400])/len(weak1profile[:400])
-weak2profile = np.sum(weak2,axis=0)/len(weak2)
-weak2baseline = sum(weak2profile[:400])/len(weak2profile[:400])
-weak3profile = np.sum(weak3,axis=0)/len(weak3)
-weak3baseline = sum(weak3profile[:400])/len(weak3profile[:400])
-weak4profile = np.sum(weak4,axis=0)/len(weak4)
-weak4baseline = sum(weak4profile[:400])/len(weak4profile[:400])
-
-strong1profile = np.sum(strong1,axis=0)/len(strong1)
-strong1baseline = sum(strong1profile[:400])/len(strong1profile[:400])
-strong2profile = np.sum(strong2,axis=0)/len(strong2)
-strong2baseline = sum(strong2profile[:400])/len(strong2profile[:400])
-strong3profile = np.sum(strong3,axis=0)/len(strong3)
-strong3baseline = sum(strong3profile[:400])/len(strong3profile[:400])
-strong4profile = np.sum(strong4,axis=0)/len(strong4)
-strong4baseline = sum(strong4profile[:400])/len(strong4profile[:400])
-
-fig, ax = plt.subplots()
-plt.plot(weak1profile-weak1baseline,label='weak1')
-plt.plot(weak2profile-weak2baseline,label='weak2')
-plt.plot(weak3profile-weak3baseline,label='weak3')
-plt.plot(weak4profile-weak4baseline,label='weak4')
-
-plt.plot(strong1profile-strong1baseline,label='strong1')
-plt.plot(strong2profile-strong2baseline,label='strong2')
-plt.plot(strong3profile-strong3baseline,label='strong3')
-plt.plot(strong4profile-strong4baseline,label='strong4')
-
-plt.legend()
-
-fig.tight_layout()
-plt.show()
+ax.legend()
+ax.set_title('weak')
+#ax.set_xlim(1425,1575)
+fig.show()

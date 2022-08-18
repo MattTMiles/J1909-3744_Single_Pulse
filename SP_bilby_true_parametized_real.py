@@ -17,10 +17,10 @@ from scipy.special import gamma, factorial
 
 # A few simple setup steps
 label = 'linear_regression_unknown_noise'
-outdir = 'outdir_normalised_function_result_real_50bins_truenoise'
+outdir = 'outdir_poldata_17_05'
 bilby.utils.check_directory_exists_and_if_not_mkdir(outdir)
 
-fdfs = pd.read_pickle("./Freq_small_df.pkl")
+fdfs = pd.read_pickle("./pol_df.pkl")
 Edata = fdfs["snr"]
 
 #Gauss components
@@ -82,7 +82,7 @@ priors['sigma1'] = bilby.core.prior.Uniform(0, 5, 'sigma1')
 #priors['alpha1'] = bilby.core.prior.Uniform(2, 6, 'alpha1')
 priors['alpha1'] = 2
 priors['mu2'] = bilby.core.prior.Uniform(5, 10, 'mu2')
-priors['sigma2'] = bilby.core.prior.Uniform(0.5, 5, 'sigma2')
+priors['sigma2'] = bilby.core.prior.Uniform(0.5, 10, 'sigma2')
 #priors['A2'] = bilby.core.prior.Uniform(0, 10000, 'A2')
 priors['alpha2'] = bilby.core.prior.Uniform(1.5, 6, 'alpha2')
 #priors['alpha2'] = 2

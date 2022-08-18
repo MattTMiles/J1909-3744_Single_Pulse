@@ -14,11 +14,11 @@ dataframe = []
 fdfs_nopulse = []
 
 for sp in active:
-    S = sum(sp[1475:1525])
-    N = 1525-1475
+    S = sum(sp[1470:1500])
+    N = 1500-1470
     IP_Fluence = sum(sp[510:710])
-    lower = sp[:1475]
-    upper = sp[1525:]
+    lower = sp[:1470]
+    upper = sp[1500:]
     using = np.concatenate((lower,upper),axis=None)
     fdfs_nopulse.append(using)
     ave = sum(using)/len(using)
@@ -31,8 +31,8 @@ for sp in active:
     non_pulse_s2 = sum(sp[200:300])
     window_test = non_pulse_S-non_pulse_s2
     op1 = sp[:1150]
-    op2 = sp[1250:1475]
-    op3 = sp[1525:]
+    op2 = sp[1250:1470]
+    op3 = sp[1500:]
     using2 = np.concatenate((op1,op2,op3),axis=None)
     ave2 = (sum(using2)/len(using2))
     using2 = np.subtract(using2,ave2)
@@ -44,4 +44,4 @@ for sp in active:
     dataframe.append(d)
 
 fdfs_narrow = pd.DataFrame(dataframe,columns=labels)
-fdfs_narrow.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Freq_small_df_narrow.pkl")
+fdfs_narrow.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Freq_small_df_30bin.pkl")

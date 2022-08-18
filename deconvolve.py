@@ -8,8 +8,25 @@ import pandas as pd
 from pylab import hist, diag
 import scipy.integrate as integrate
 from scipy.special import gamma, factorial
+import os
 
+os.chdir('/fred/oz002/users/mmiles/SinglePulse/')
+
+#Normal 100 bin window
 fdfs = pd.read_pickle("./Freq_small_df.pkl")
+
+'''
+#Smaller 50 bin window
+fdfs = pd.read_pickle("Freq_small_df_narrow.pkl")
+'''
+'''
+#Smaller 30 bin window
+fdfs = pd.read_pickle("Freq_small_df_30bin.pkl")
+'''
+'''
+#Wider 300 bin window
+fdfs = pd.read_pickle("Freq_small_df_wide.pkl")
+'''
 Edata = fdfs["snr"]
 
 def gaussian(x,mu,sigma):
@@ -51,8 +68,22 @@ def gausscomp2(x,f,mu,sigma,alpha):
 #These are the paramaters found from bilby. 
 #They represent: f, mu1, sigma1, alpha1, mu2, sigma2, alpha2
 #Alpha1 has been preset as alpha1=2 prior to bilby.
+
+#Normal 100 bin parameters
 Bilby_params = (0.16,0.64,0.58,2,8.22,6.64,3.97)
 
+'''
+#50 bin parameters
+Bilby_params = (0.15,0.68,0.52,2,9.52,8.06,4.17)
+'''
+'''
+#30 bin parameters
+Bilby_params = (0.18,0.71,0.76,2,9.74,6.74,3.53)
+'''
+'''
+#Wide bin parameters
+Bilby_params = (0.15,0.53,0.43,2,4.86,3.68,3.24)
+'''
 #Based on the real data lets bound our distribution
 E_y,E_x,E_=hist(Edata, 50, alpha=.3, label='On-Pulse', density=True)
 E_x = (E_x[1:]+E_x[:-1])/2
@@ -67,7 +98,6 @@ convolved_model = model(xarray, *Bilby_params)
 deconvolved_model = dc_model(xarray, *Bilby_params)
 
 #This is a model of just the noise, 0 mean, 1.1 sigma
-
 noise_model = 1/(1.1*np.sqrt(2*np.pi))*np.exp(-0.5*np.abs(xarray/1.1)**2)
 
 #As a sanity check let's convolve the noise model with t`he deconvolved model and make sure we get the same thing
@@ -80,18 +110,18 @@ reconvolve = (reconvolve/(max(reconvolve)+sys.float_info[3]))
 convolved_modelnorm = model(xarray2, *Bilby_params)
 #convolved_modelnorm = convolved_modelnorm/(max(convolved_modelnorm)+sys.float_info[3])
 #plt.plot(xarray2*2,reconvolve,label="reconvolved using scipy")
-gauss1 = gausscomp1(xarray,0.15,0.64,0.58,2)
-gauss2 = gausscomp2(xarray,0.15,8.22,6.64,3.97)
+gauss1 = gausscomp1(xarray,Bilby_params[0],Bilby_params[1],Bilby_params[2],Bilby_params[3])
+gauss2 = gausscomp2(xarray,Bilby_params[0],Bilby_params[4],Bilby_params[5],Bilby_params[6])
 
-plt.plot(xarray2,convolved_modelnorm, label= "Model")
-plt.plot(xarray,deconvolved_model, label= "Deconvolved Model")
-plt.plot(xarray,gauss1, label = "Weak mode")
-plt.plot(xarray, gauss2, label = "Strong Mode")
+#plt.plot(xarray2,convolved_modelnorm, label= "Model")
+#plt.plot(xarray,deconvolved_model, label= "Deconvolved Model")
+#plt.plot(xarray,gauss1, label = "Weak mode")
+#plt.plot(xarray, gauss2, label = "Strong Mode")
 
-plt.xlabel("SNR")
-plt.ylabel("Probability Density")
-plt.legend()
-plt.show()
+#plt.xlabel("SNR")
+#plt.ylabel("Probability Density")
+#plt.legend(prop={'size':6})
+#plt.show()
 '''
 
 

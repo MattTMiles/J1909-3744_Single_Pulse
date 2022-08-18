@@ -12,6 +12,9 @@ import scipy
 from scipy import fft
 import scipy.signal as signal
 from astropy.timeseries import LombScargle
+from matplotlib.ticker import FormatStrFormatter
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 os.chdir("/home/mmiles/soft/SP/")
 from ACF import auto_correlation_function
@@ -111,9 +114,30 @@ plt.legend()
 plt.show()
 '''
 
-
-plt.imshow(fdata_smaller_scrunched[:1000].reshape(-1,2048), cmap='afmhot', aspect='auto',interpolation='none', origin='lower')
+fig,ax = plt.subplots()
+a = np.arange(0,len(fdata_smaller_scrunched[1]))
+b = np.linspace(0,1,len(a))
+ax.imshow(fdata_smaller_scrunched[:1000].reshape(-1,2048), cmap='afmhot', aspect='auto',interpolation='none', origin='lower')
+#plt.xticks(a, np.linspace(0,1,len(a)))
+#ax.xaxis.set_major_locator(plt.MaxNLocator(4))
+#ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+#my_xticks=['0','0.25','0.5','0.75','1']
+#plt.xticks(a,my_xticks)
 plt.xlabel('Pulse Phase')
-plt.ylabel('Pulse Index')
+plt.ylabel('Pulse Number')
+'''
+axins = zoomed_inset_axes(ax, 2, loc='center left')
+axins.imshow(fdata_smaller_scrunched[:1000].reshape(-1,2048), cmap='afmhot', interpolation="nearest", origin="lower")
+x1,x2,y1,y2 = 1250,1700,400,600
+axins.set_xlim(x1, x2)
+axins.set_ylim(y1, y2)
+plt.xticks(visible=False)
+plt.yticks(visible=False)
+'''
+
 #plt.savefig('/fred/oz002/users/mmiles/SinglePulse/First100_dedisperse.jpeg')
+#plt.tight_layout()
+#mark_inset(ax, axins, loc1=1, loc2=4, fc="none", ec="1")
+
+plt.draw()
 plt.show()

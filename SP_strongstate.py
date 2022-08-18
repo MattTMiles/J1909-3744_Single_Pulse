@@ -16,18 +16,49 @@ import subprocess as sproc
 Main = "/fred/oz002/users/mmiles/SinglePulse/"
 source = "/fred/oz002/users/mmiles/SinglePulse/SinglePulse_data"
 
+snr_folder = '/fred/oz002/users/mmiles/SinglePulse/snr_normal_window'
+
+
+#Normal 100 bin window
 fdfs = pd.read_pickle("./Freq_small_df.pkl")
+
+'''
+#Smaller 50 bin window
+fdfs = pd.read_pickle("Freq_small_df_narrow.pkl")
+'''
+'''
+#Smaller 30 bin window
+fdfs = pd.read_pickle("Freq_small_df_30bin.pkl")
+'''
+'''
+#Wider 300 bin window
+fdfs = pd.read_pickle("Freq_small_df_wide.pkl")
+'''
+
 active = np.load("fdata_smaller_scrunched.npy")
 
 bright = np.zeros(len(fdfs))
-#limit = 1.32123
-limit = 1.49511
-'''
-bright[fdfs['Fluence']>limit] = 1
 
+
+#Normal 100 bin limit
+limit = 1.49511
+
+'''
+#Narrow 50 bin window
+limit = 1.53044
+'''
+'''
+#Narrow 30 bin window
+limit = 1.9674
+'''
+'''
+#Wide 300 bin window
+limit = 1.0866
+'''
+'''
 #Create dataframes for the strong and weak pulses
-strong = fdfs[fdfs['Fluence']>=limit]
-weak = fdfs[fdfs['Fluence']<limit]
+strong = fdfs[fdfs['snr']>=limit]
+weak = fdfs[fdfs['snr']<limit]
 
 #The below code snippet is to copy the data into the strong and weak mode folders. I'm leaving this in in case the limit changes 
 # and this needs to be done again. If that happens, you should probably clear the Strong_data and Weak_data folders 
@@ -42,30 +73,31 @@ for rawdata in sorted(os.listdir(source))[:53001]:
 
 for rawdata in sorted(bulk):
     os.system('cp '+rawdata+' ../bulk_data2')
-
+'''
+'''
 strongbulk = [bulk[x] for x in strong.index]
 weakbulk = [bulk[x] for x in weak.index]
 
 for rawdata_s in sorted(strongbulk):
     #os.system('cp '+rawdata_s+' ../Strong_data')
-    p = sproc.Popen('cp '+rawdata_s+' ../Strong_data2',shell=True)
+    p = sproc.Popen('cp '+rawdata_s+' '+snr_folder+'/Strong_data',shell=True)
     p.wait()
 
 for rawdata_w in sorted(weakbulk):
-    p = sproc.Popen('cp '+rawdata_w+' ../Weak_data2',shell = True)
+    p = sproc.Popen('cp '+rawdata_w+' '+snr_folder+'/Weak_data',shell = True)
     p.wait()
 
-os.chdir(Main)
-
+os.chdir(snr_folder)
 
 Strongdf = pd.DataFrame(strong)
 Weakdf = pd.DataFrame(weak)
-Strongdf.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Strong_state.pkl")
-Weakdf.to_pickle("/fred/oz002/users/mmiles/SinglePulse/Weak_state.pkl")
+Strongdf.to_pickle(snr_folder+"/Strong_state.pkl")
+Weakdf.to_pickle(snr_folder+"/Weak_state.pkl")
 '''
+
 #Create the arrays that contain the strong and weak pulses
-strong_array = active[fdfs['Fluence']>=limit]
-weak_array = active[fdfs['Fluence']<limit]
+strong_array = active[fdfs['snr']>=limit]
+weak_array = active[fdfs['snr']<limit]
 
 #Create the profiles for the strong and weak modes
 Total_profile = np.sum(active,axis=0)/len(active)
@@ -75,10 +107,10 @@ weak_profile = np.sum(weak_array,axis=0)/len(weak_array)
 #First and second half of the weak pulse
 #weak_profile1st = np.sum(weak_array[:7000],axis=0)/len(weak_array[:7000])
 #weak_profile2nd = np.sum(weak_array[7000:],axis=0)/len(weak_array[7000:])
-
+'''
 def norm(data):
     return data-min(data)/(max(data)-min(data))
-'''
+
 jitter_weak = []
 jitter_strong = []
 
@@ -125,11 +157,11 @@ ax.plot(Total_profile)
 #plt.axvline(1350)
 #plt.axvline(1550)
 fig.tight_layout()
-'''
 
+'''
 weak_baseline = sum(weak_profile[:400])/len(weak_profile[:400])
 strong_baseline = sum(strong_profile[:400])/len(strong_profile[:400])
-'''
+
 fig, ax = plt.subplots()
 ax.set_title('Profile Comparison')
 ax.plot(strong_profile,label = 'Strong Profile')
@@ -140,7 +172,7 @@ ax.plot(weak_profile, label = 'Weak Profile')
 #plt.axvline(710)
 fig.legend()
 fig.tight_layout()
-'''
+
 scaled_strong = strong_profile - strong_baseline
 scaled_weak = weak_profile - weak_baseline
 residual = ((scaled_strong/(max(scaled_strong)))) - (scaled_weak/(max(scaled_weak)))
@@ -152,8 +184,8 @@ fig, ax = plt.subplots()
 ax.set_title('Scaled Profile Comparison')
 ax.plot(scaled_strong/(max(scaled_strong)),label = 'Strong Profile')
 ax.plot(scaled_weak/(max(scaled_weak)), label = 'Weak Profile')
-#plt.axvline(1450)
-#plt.axvline(1550)
+plt.axvline(1350)
+plt.axvline(1650)
 fig.legend()
 fig.tight_layout()
 
@@ -178,17 +210,20 @@ ax.set_title('Shifted Residual')
 ax.plot(shiftedresidual, label='Strong - Weak shifted to max value')
 fig.legend()
 fig.tight_layout()
+'''
+fig, axs = plt.subplots() #gridspec_kw={'height_ratios':[1,2]})
 
-fig, axs = plt.subplots(2, gridspec_kw={'height_ratios':[1,2]})
-axs[0].plot(residual, label='Strong - Weak residual',c='tab:green')
-axs[0].set_xlim(1400,1600)
-axs[1].plot(scaled_strong/(max(scaled_strong)),label = 'Strong Profile')
-axs[1].plot(scaled_weak/(max(scaled_weak)), label = 'Weak Profile')
-axs[1].set_xlim(1400,1600)
-axs[0].set_title('Scaled comparison')
-fig.legend()
+#axs[0].plot(residual, label='Strong - Weak residual',c='tab:green')
+axs.set_xlim(1400,1600)
+axs.plot(scaled_strong/(max(scaled_strong)),label = 'Strong Profile')
+axs.plot(scaled_weak/(max(scaled_weak)), label = 'Weak Profile')
+axs.set_xlim(1400,1600)
+axs.set_title('Scaled comparison')
+axs.set_xlabel('Phase bins')
+#axs.set_ylabel('')
+fig.legend(prop={'size':6})
 fig.tight_layout()
-
+'''
 fig, axs = plt.subplots(2, gridspec_kw={'height_ratios':[1,2]})
 axs[0].plot(shiftedresidual, label='Strong - Weak residual',c='tab:green')
 axs[1].plot(xarray,shift((scaled_strong/(max(scaled_strong))),-6),label = 'Strong Profile')

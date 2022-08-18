@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 """
 An example of how to use bilby to perform parameter estimation for
@@ -17,54 +18,43 @@ from scipy.special import gamma, factorial
 
 # A few simple setup steps
 label = 'linear_regression_unknown_noise'
-outdir = 'outdir_30bin_window_check'
+outdir = 'outdir_Positive_Pulses_mu1=0'
 bilby.utils.check_directory_exists_and_if_not_mkdir(outdir)
 
-fdfs = pd.read_pickle("./Freq_small_df_30bin.pkl")
+fdfs = pd.read_pickle("./pol_df.pkl")
 Edata = fdfs["snr"]
-
-#Gauss components
-def gauss1(x,f,mu,sigma,A,alpha):
-    return f*A*np.exp(-0.5*(np.abs((x-mu)/sigma)**alpha))
-
-def gauss2(x,f,mu,sigma,A,alpha):
-    return (1-f)*A*np.exp(-0.5*(np.abs((x-mu)/sigma)**alpha))
-
-def bimodal(x,f,mu1,sigma1,A1,alpha1,mu2,sigma2,A2,alpha2):
-    return gauss1(x,f,mu1,sigma1,A1,alpha1)+gauss2(x,f,mu2,sigma2,A2,alpha2)
 
 #Model that's in use
 def model(x,f,mu1,sigma1,alpha1,mu2,sigma2,alpha2):
 
     resultbin =[]
+
+    C1 = alpha1/((2**(1+(1/alpha1)))*sigma1*gamma(1/alpha1))
+    C2 = alpha2/((2**(1+(1/alpha2)))*sigma2*gamma(1/alpha2))
+
+    #Normalisation integral
+    Cbig = integrate.quad(lambda x: \
+        (f*C1*np.exp(-0.5*np.abs((x-mu1)/sigma1)**alpha1))\
+            +((1-f)*C2*np.exp((-0.5*np.abs((x-mu2)/sigma2)**alpha2)))\
+                ,0,x.max())[0]
+    
+
+    #Numerical integration
     for unit in x:
 
-        C1 = alpha1/((2**(1+(1/alpha1)))*sigma1*gamma(1/alpha1))
-        C2 = alpha2/((2**(1+(1/alpha2)))*sigma2*gamma(1/alpha2))
         sigma_noise = 1.1
-        result = integrate.quad(lambda xdash: (1/(np.sqrt(2*np.pi*(sigma_noise**2))))*np.exp(-0.5*((xdash**2)/(sigma_noise**2)))*((f*(C1*np.exp(-0.5*np.abs(((unit-xdash)-mu1)/sigma1)**alpha1)))+((1-f)*C2*np.exp(-0.5*np.abs(((unit-xdash)-mu2)/sigma2)**alpha2))),x.min(),x.max())[0]
+        result = integrate.quad(lambda xdash: \
+            (1/(np.sqrt(2*np.pi*(sigma_noise**2))))*np.exp(-0.5*(((unit-xdash)**2)/(sigma_noise**2)))*\
+                ((f*C1*np.exp(-0.5*np.abs((xdash-mu1)/sigma1)**alpha1))\
+                    +((1-f)*C2*np.exp(-0.5*np.abs((xdash-mu2)/sigma2)**alpha2)))\
+                        ,0,x.max())[0]
 
-        resultbin.append(result)
+        resultC = result/Cbig
+        resultbin.append(resultC)
 
     a = np.asarray(resultbin)
     return a
 
-#An analytic gaussian function for comparison where needed
-def analytic(x,mu1,sigma1):
-    return (1/(np.sqrt(2*np.pi*(1+(sigma1**2)))))*np.exp(-0.5*(((x-mu1)**2)/(1+(sigma1**2))))
-
-# Create random gaussian noise
-rmu1, rsigma1 = 0.5, 1.1
-s1 = np.random.normal(rmu1, rsigma1, 1000)
-
-rmu2, rsigma2, = 6, 1
-s2 = np.random.normal(rmu2, rsigma2, 1000)
-
-noise_mu, noise_sigma = 0, 1
-snoise = np.random.normal(noise_mu, noise_sigma, 1000)
-
-#T_s = s1
-T_s = np.concatenate((snoise+s1,snoise+s2))
 
 #Introduce the requirements for the SNR probability density functions
 E_y,E_x,E_=hist(Edata,50,alpha=.3,label='On-Pulse', density=True)
@@ -76,21 +66,21 @@ likelihood = bilby.core.likelihood.GaussianLikelihood(E_x, E_y, model)
 priors = dict()
 priors['f'] = bilby.core.prior.Uniform(1e-5, 1-(1e-5), 'f')
 #priors['f'] = 1
-priors['mu1'] = bilby.core.prior.Uniform(0, 5, 'mu1')
-priors['sigma1'] = bilby.core.prior.Uniform(0, 5, 'sigma1')
+priors['mu1'] = 0
+priors['sigma1'] = 1.1
 #priors['A1'] = bilby.core.prior.Uniform(0, 10000, 'A1')
 #priors['alpha1'] = bilby.core.prior.Uniform(2, 6, 'alpha1')
 priors['alpha1'] = 2
-priors['mu2'] = bilby.core.prior.Uniform(5, 20, 'mu2')
+priors['mu2'] = bilby.core.prior.Uniform(5, 10, 'mu2')
 priors['sigma2'] = bilby.core.prior.Uniform(0.5, 10, 'sigma2')
 #priors['A2'] = bilby.core.prior.Uniform(0, 10000, 'A2')
-priors['alpha2'] = bilby.core.prior.Uniform(1.5, 10, 'alpha2')
+priors['alpha2'] = bilby.core.prior.Uniform(1.5, 6, 'alpha2')
 #priors['alpha2'] = 2
 priors['sigma'] = bilby.core.prior.Uniform(1e-5, 500, 'sigma')
 
 # And run sampler\
 result = bilby.run_sampler(
     likelihood=likelihood, priors=priors, sampler='dynesty', npoints=250,
-    sample='unif', injection_parameters=None, outdir=outdir,
+    sample='unif', injection_parameters=None, outdir=outdir, npool=16,
     label=label)
 result.plot_corner()
